@@ -9,6 +9,7 @@
         "lint": "eslint"
     },
     "dependencies": {
+        "@heroicons/react": "^2.2.0",
         "formik": "^2.4.9",
         "luxon": "^3.7.2",
         "next": "16.3.4",
