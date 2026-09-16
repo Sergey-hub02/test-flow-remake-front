@@ -3,9 +3,13 @@
 import Form from 'next/form'
 import Link from 'next/link'
 
+import { useState } from "react"
+
 import { useFormik } from "formik"
 import * as Yup from "yup"
 import { string } from "yup"
+
+import axios from "axios"
 
 const forgotValidationSchema = Yup.object({
     email: string()
@@ -14,16 +18,57 @@ const forgotValidationSchema = Yup.object({
 })
 
 const ForgotForm = () => {
+    const [error, setError] = useState<string>("")
+    const [message, setMessage] = useState<string>("")
+
     const formik = useFormik({
         initialValues: { email: "" },
         validationSchema: forgotValidationSchema,
-        onSubmit: (fields) => {
-            console.log("Отправка данных на сервер:", fields)
+        onSubmit: async (fields, { setSubmitting, resetForm }) => {
+            try {
+                const response = await axios.post("api/v1/auth/forgot", fields)
+                setSubmitting(false)
+
+                setError("")
+                setMessage(response.data.message)
+
+                resetForm()
+            }
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            catch (error: any) {
+                setSubmitting(false)
+
+                if (error.response) {
+                    if (error.response.status === 422) {
+                        alert("Недостаточно данных для выполнения запроса!")
+                        return
+                    }
+
+                    setError(error.response.data.detail)
+                    return
+                }
+
+                if (error.request) {
+                    alert("Не удалось соединиться с сервером!")
+                    return
+                }
+
+                alert("Ошибка при выполнении запроса!")
+                console.error(error)
+            }
         },
     })
 
     return (
         <Form onSubmit={formik.handleSubmit} action="">
+            {error.length > 0 && (
+                <div className="mt-3 rounded-md border border-red-700 bg-slate-900 py-3 px-5 text-red-400">{error}</div>
+            )}
+
+            {message.length > 0 && (
+                <div className="mt-3 rounded-md border border-green-700 bg-slate-900 py-3 px-5 text-green-400">{message}</div>
+            )}
+
             <div className="mt-3">
                 <label htmlFor="email" className="block font-bold text-shadow-lg text-shadow-slate-800">E-mail&nbsp;<span className="text-red-600">*</span></label>
 

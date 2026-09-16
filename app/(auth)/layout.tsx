@@ -1,9 +1,17 @@
 import { ReactNode } from "react"
 import Image from "next/image"
+import { cookies } from "next/headers"
+import { redirect } from "next/navigation"
 
 type AuthLayoutProps = { children: ReactNode }
 
-const AuthLayout = ({ children }: AuthLayoutProps) => {
+const AuthLayout = async ({ children }: AuthLayoutProps) => {
+    const cookieStore = await cookies()
+
+    if (cookieStore.has("refresh_token")) {
+        redirect("/")
+    }
+
     return (
         <div className="min-h-screen flex justify-center items-center">
             <div className="bg-slate-700 shadow-lg shadow-slate-800/50 rounded-md py-5 px-6 w-full max-w-175 flex flex-col justify-center">

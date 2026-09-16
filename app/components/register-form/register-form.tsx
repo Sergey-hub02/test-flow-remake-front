@@ -2,11 +2,17 @@
 
 import Link from "next/link"
 import Form from "next/form"
+import { useRouter } from "next/navigation"
+
+import { useState } from "react"
 
 import { DateTime } from "luxon"
 import { useFormik } from "formik"
+
 import * as Yup from "yup"
 import { string, date } from "yup"
+
+import axios from "axios"
 
 const registerValidationSchema = Yup.object({
     last_name: string().required("Заполните это поле!"),
@@ -26,6 +32,9 @@ const registerValidationSchema = Yup.object({
 })
 
 const RegisterForm = () => {
+    const router = useRouter()
+    const [error, setError] = useState<string>("")
+
     const formik = useFormik({
         initialValues: {
             last_name: "",
@@ -37,13 +46,47 @@ const RegisterForm = () => {
             repeated_password: "",
         },
         validationSchema: registerValidationSchema,
-        onSubmit: (fields) => {
-            console.log("Отправка данных на сервер:", fields)
+        onSubmit: async (fields, { setSubmitting, resetForm }) => {
+            try {
+                await axios.post("/api/v1/auth/register", fields)
+
+                setSubmitting(false)
+                setError("")
+
+                resetForm()
+                router.push("/")
+            }
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            catch (error: any) {
+                setSubmitting(false)
+
+                if (error.response) {
+                    if (error.response.status === 422) {
+                        alert("Недостаточно данных для выполнения запроса!")
+                        return
+                    }
+
+                    setError(error.response.data.detail)
+                    return
+                }
+
+                if (error.request) {
+                    alert("Не удалось соединиться с сервером!")
+                    return
+                }
+
+                alert("Ошибка при выполнении запроса!")
+                console.error(error)
+            }
         },
     })
 
     return (
         <Form onSubmit={formik.handleSubmit} action="">
+            {error.length > 0 && (
+                <div className="mt-3 rounded-md border border-red-700 bg-slate-900 py-3 px-5 text-red-400">{error}</div>
+            )}
+
             <div className="mt-3 grid grid-cols-6 sm:gap-4 gap-2">
                 <div className="sm:col-span-2 col-span-6">
                     <label htmlFor="last-name" className="block font-bold">Фамилия&nbsp;<span className="text-red-600">*</span></label>

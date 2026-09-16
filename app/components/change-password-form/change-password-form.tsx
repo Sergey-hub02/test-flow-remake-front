@@ -3,9 +3,13 @@
 import Form from "next/form"
 import Link from "next/link"
 
+import { useState } from "react"
+
 import { useFormik } from "formik"
 import * as Yup from "yup"
 import { string } from "yup"
+
+import axios from "axios"
 
 interface ChangePasswordFormProps { onetime_code: string }
 
@@ -20,20 +24,60 @@ const changePasswordValidationSchema = Yup.object({
 })
 
 const ChangePasswordForm = ({ onetime_code }: ChangePasswordFormProps) => {
+    const [error, setError] = useState<string>("")
+    const [message, setMessage] = useState<string>("")
+
     const formik = useFormik({
         initialValues: {
             password: "",
             repeated_password: "",
         },
         validationSchema: changePasswordValidationSchema,
-        onSubmit: (fields) => {
-            console.log("Отправка данных на сервер:", fields)
-            console.log("Одноразовый код:", onetime_code)
+        onSubmit: async (fields, { setSubmitting, resetForm }) => {
+            try {
+                await axios.patch(`/api/v1/auth/change_password/${onetime_code}`, fields)
+                setSubmitting(false)
+
+                setError("")
+                setMessage("Пароль был успешно изменён!")
+
+                resetForm()
+            }
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            catch (error: any) {
+                setSubmitting(false)
+
+                if (error.response) {
+                    if (error.response.status === 422) {
+                        alert("Недостаточно данных для выполнения запроса!")
+                        return
+                    }
+
+                    setError(error.response.data.detail)
+                    return
+                }
+
+                if (error.request) {
+                    alert("Не удалось соединиться с сервером!")
+                    return
+                }
+
+                alert("Ошибка при выполнении запроса!")
+                console.error(error)
+            }
         },
     })
 
     return (
         <Form onSubmit={formik.handleSubmit} action="">
+            {error.length > 0 && (
+                <div className="mt-3 rounded-md border border-red-700 bg-slate-900 py-3 px-5 text-red-400">{error}</div>
+            )}
+
+            {message.length > 0 && (
+                <div className="mt-3 rounded-md border border-green-700 bg-slate-900 py-3 px-5 text-green-400">{message}</div>
+            )}
+
             <div className="mt-3">
                 <label htmlFor="password" className="block font-bold text-shadow-lg text-shadow-slate-800">Новый пароль&nbsp;<span className="text-red-600">*</span></label>
 

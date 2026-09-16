@@ -1,7 +1,15 @@
-import type { NextConfig } from "next";
+import type { NextConfig } from "next"
 
 const nextConfig: NextConfig = {
-  /* config options here */
-};
+    /* config options here */
+    rewrites: () => {
+        return [
+            {
+                source: "/api/v1/:path*",
+                destination: "http://api:8000/api/v1/:path*",
+            }
+        ]
+    },
+}
 
 export default nextConfig;
