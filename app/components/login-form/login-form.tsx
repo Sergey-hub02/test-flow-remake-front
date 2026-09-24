@@ -2,14 +2,14 @@
 
 import Link from "next/link"
 import Form from "next/form"
+import { signIn } from "next-auth/react"
 import { useRouter } from "next/navigation"
+
 import { useState } from "react"
 
 import { useFormik } from "formik"
 import * as Yup from "yup"
 import { string } from "yup"
-
-import axios from "axios"
 
 const loginValidationSchema = Yup.object({
     username: string()
@@ -28,37 +28,32 @@ const LoginForm = () => {
             password: "",
         },
         validationSchema: loginValidationSchema,
-        onSubmit: (fields, { setSubmitting, resetForm }) => {
-            axios.post("/api/v1/auth/login", fields, {
-                headers: { "Content-Type": "application/x-www-form-urlencoded" },
-            })
-                .then(() => {
-                    setSubmitting(false)
-                    setError("")
+        onSubmit: async (fields, { setSubmitting, resetForm }) => {
+            setError("")
 
-                    resetForm()
-                    router.push("/")
+            try {
+                const response = await signIn("credentials", {
+                    username: fields.username,
+                    password: fields.password,
+                    redirect: false,
                 })
-                .catch(error => {
+
+                if (!response || response.error) {
+                    setError(response.code ?? "Ошибка при входе в учётную запись!")
                     setSubmitting(false)
+                    return
+                }
 
-                    if (error.response) {
-                        if (error.response.status === 422) {
-                            alert("Недостаточно данных для выполнения запроса!")
-                            return
-                        }
+                setSubmitting(false)
+                resetForm()
 
-                        setError(error.response.data.detail)
-                        return
-                    }
-                    if (error.request) {
-                        alert("Не удалось соединиться с сервером!")
-                        return
-                    }
-
-                    alert("Ошибка при выполнении запроса!")
-                    console.error(error)
-                })
+                router.push("/")
+                router.refresh()
+            }
+            catch (error) {
+                setError((error as Error).message)
+                setSubmitting(false)
+            }
         },
     })
 

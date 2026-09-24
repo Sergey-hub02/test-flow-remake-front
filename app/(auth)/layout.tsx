@@ -1,14 +1,14 @@
 import { ReactNode } from "react"
 import Image from "next/image"
-import { cookies } from "next/headers"
 import { redirect } from "next/navigation"
+import { auth } from "@/app/auth"
 
 type AuthLayoutProps = { children: ReactNode }
 
 const AuthLayout = async ({ children }: AuthLayoutProps) => {
-    const cookieStore = await cookies()
+    const session = await auth()
 
-    if (cookieStore.has("refresh_token")) {
+    if (session) {
         redirect("/")
     }
 

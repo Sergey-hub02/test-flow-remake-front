@@ -1,37 +1,22 @@
-"use client"
+import { redirect } from "next/navigation"
+import { ReactNode } from "react"
 
-import { ReactNode, useState } from "react"
-
-import SidebarMenu from "@/app/components/sidebar-menu/sidebar-menu"
-import MobileMenu from "@/app/components/mobile-menu/mobile-menu"
-import Header from "@/app/components/header/header"
-import { AuthProvider } from "@/app/contexts/auth"
+import MainLayoutFrame from "@/app/components/main-layout-frame/main-layout-frame"
+import { auth } from "@/app/auth"
 
 type MainLayoutProps = { children: ReactNode }
 
-const MainLayout = ({ children }: MainLayoutProps) => {
-    const [mobileMenuOpened, setMobileMenuOpened] = useState<boolean>(false)
+const MainLayout = async ({ children }: MainLayoutProps) => {
+    const session = await auth()
+
+    if (!session) {
+        redirect("/login")
+    }
 
     return (
-        <AuthProvider>
-            <div className="h-screen overflow-hidden flex flex-col">
-                <Header onMenuClick={() => setMobileMenuOpened(!mobileMenuOpened)} />
-
-                <div className="flex flex-1 overflow-hidden relative">
-                    <aside className="basis-1/5 border-r border-r-zinc-200 h-full overflow-y-auto lg:block hidden">
-                        <SidebarMenu />
-                    </aside>
-
-                    <MobileMenu show={mobileMenuOpened} close={() => setMobileMenuOpened(false)} />
-
-                    <main className="lg:basis-4/5 basis-5/5 h-full p-5">
-                        <div className="bg-slate-800 py-4 px-7 rounded-md h-full overflow-y-auto">
-                            {children}
-                        </div>
-                    </main>
-                </div>
-            </div>
-        </AuthProvider>
+        <div className="h-screen overflow-hidden flex flex-col">
+            <MainLayoutFrame>{children}</MainLayoutFrame>
+        </div>
     )
 }
 

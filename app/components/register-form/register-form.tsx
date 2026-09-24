@@ -3,6 +3,7 @@
 import Link from "next/link"
 import Form from "next/form"
 import { useRouter } from "next/navigation"
+import { signIn } from "next-auth/react"
 
 import { useState } from "react"
 
@@ -47,14 +48,28 @@ const RegisterForm = () => {
         },
         validationSchema: registerValidationSchema,
         onSubmit: async (fields, { setSubmitting, resetForm }) => {
+            setError("")
+
             try {
-                await axios.post("/api/v1/auth/register", fields)
+                await axios.post("/api/v1/users", fields)
+
+                const response = await signIn("credentials", {
+                    username: fields.email,
+                    password: fields.password,
+                    redirect: false,
+                })
+
+                if (!response || response.error) {
+                    setError(response.code ?? "Ошибка при входе в учётную запись!")
+                    setSubmitting(false)
+                    return
+                }
 
                 setSubmitting(false)
-                setError("")
-
                 resetForm()
+
                 router.push("/")
+                router.refresh()
             }
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
             catch (error: any) {
@@ -62,7 +77,7 @@ const RegisterForm = () => {
 
                 if (error.response) {
                     if (error.response.status === 422) {
-                        alert("Недостаточно данных для выполнения запроса!")
+                        setError("Недостаточно данных для выполнения запроса!")
                         return
                     }
 
@@ -71,11 +86,11 @@ const RegisterForm = () => {
                 }
 
                 if (error.request) {
-                    alert("Не удалось соединиться с сервером!")
+                    setError("Не удалось соединиться с сервером!")
                     return
                 }
 
-                alert("Ошибка при выполнении запроса!")
+                setError("Ошибка при выполнении запроса!")
                 console.error(error)
             }
         },

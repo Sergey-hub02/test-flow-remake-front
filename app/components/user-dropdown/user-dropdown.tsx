@@ -1,11 +1,13 @@
 "use client"
 
 import Link from "next/link"
+import { useSession } from "next-auth/react"
 import { ChevronDownIcon, ChevronUpIcon } from "@heroicons/react/16/solid"
 import { ArrowRightStartOnRectangleIcon, BookmarkIcon, EnvelopeIcon } from "@heroicons/react/24/outline"
 import { useState, useRef, useEffect } from "react"
 
 const UserDropdown = () => {
+    const { data: session } = useSession()
     const [opened, setOpened] = useState<boolean>(false)
     const containerRef = useRef<HTMLDivElement>(null)
 
@@ -32,7 +34,7 @@ const UserDropdown = () => {
             <button
                 className="cursor-pointer font-bold"
                 onClick={() => setOpened(!opened)}
-            >m1cropak@yandex.ru {arrowIcon}</button>
+            >{session?.user?.email} {arrowIcon}</button>
 
             <nav className={`absolute top-full left-0 z-50 flex-col bg-slate-800 rounded-md ${opened ? "flex" : "hidden"}`}>
                 <Link href="/my_courses" className="py-3 px-4 hover:bg-slate-700">

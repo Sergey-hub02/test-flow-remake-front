@@ -1,20 +1,9 @@
 import { jwtDecode } from "jwt-decode"
 
-export type User = {
-    id: string,
-    email: string,
-    role: string,
-}
-
-export const decodeJwt = (jwt: string): User | null => {
+export const decodeJwt = (jwt: string) => {
     try {
-        const payload = jwtDecode<User>(jwt)
-
-        return {
-            id: payload.id,
-            email: payload.email,
-            role: payload.role,
-        }
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        return jwtDecode<any>(jwt)
     }
     catch (error) {
         console.error(error)

@@ -6,6 +6,11 @@ import { DateTime } from "luxon"
 import * as Yup from "yup"
 import { date, string } from "yup"
 
+interface ChangeUserFormProps {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    user: any,
+}
+
 const changeUserFormValidationSchema = Yup.object({
     last_name: string().required("Заполните это поле!"),
     first_name: string().required("Заполните это поле!"),
@@ -15,15 +20,14 @@ const changeUserFormValidationSchema = Yup.object({
     birthday: date().required("Заполните это поле!"),
 })
 
-const ChangeUserForm = () => {
+const ChangeUserForm = ({ user }: ChangeUserFormProps) => {
     const formik = useFormik({
         initialValues: {
-            last_name: "",
-            first_name: "",
-            second_name: "",
-            email: "",
-            birthday: "",
-            photo: "",
+            last_name: String(user.last_name) ?? "",
+            first_name: String(user.first_name) ?? "",
+            second_name: String(user.second_name) ?? "",
+            email: String(user.email) ?? "",
+            birthday: String(user.birthday) ?? "",
         },
         validationSchema: changeUserFormValidationSchema,
         onSubmit: (fields) => {
