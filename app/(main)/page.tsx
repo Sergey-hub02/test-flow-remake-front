@@ -15,7 +15,6 @@ const API_BASE_URL = process.env.API_BASE_URL ?? "http://127.0.0.1:8000"
 
 const HomePage = async () => {
     const session = await auth()
-    console.log(session)
 
     const accessToken = session!.accessToken
     let user = null
@@ -54,13 +53,13 @@ const HomePage = async () => {
                 <section className="py-4">
                     <h2 className="font-bold text-xl mb-3">Общая информация</h2>
 
-                    <ChangeUserForm user={user} />
+                    <ChangeUserForm user={user} accessToken={accessToken} />
                 </section>
 
                 <section className="py-4">
                     <h2 className="font-bold text-xl mb-3">Изменение фотографии</h2>
 
-                    <ChangePhotoForm />
+                    <ChangePhotoForm user={user} accessToken={accessToken} />
                 </section>
             </div>
         </>

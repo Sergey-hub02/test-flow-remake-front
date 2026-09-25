@@ -1,14 +1,19 @@
 "use client"
 
 import Form from "next/form"
+import { useState } from "react"
 import { useFormik } from "formik"
 import { DateTime } from "luxon"
+
 import * as Yup from "yup"
 import { date, string } from "yup"
+
+import axios from "axios"
 
 interface ChangeUserFormProps {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     user: any,
+    accessToken: string,
 }
 
 const changeUserFormValidationSchema = Yup.object({
@@ -20,7 +25,10 @@ const changeUserFormValidationSchema = Yup.object({
     birthday: date().required("Заполните это поле!"),
 })
 
-const ChangeUserForm = ({ user }: ChangeUserFormProps) => {
+const ChangeUserForm = ({ user, accessToken }: ChangeUserFormProps) => {
+    const [error, setError] = useState<string>("")
+    const [message, setMessage] = useState<string>("")
+
     const formik = useFormik({
         initialValues: {
             last_name: String(user.last_name) ?? "",
@@ -30,13 +38,60 @@ const ChangeUserForm = ({ user }: ChangeUserFormProps) => {
             birthday: String(user.birthday) ?? "",
         },
         validationSchema: changeUserFormValidationSchema,
-        onSubmit: (fields) => {
-            console.log("Отправка данных на сервер:", fields)
+        onSubmit: async (fields, { setSubmitting }) => {
+            setError("")
+
+            try {
+                await axios.put(
+                    `/api/v1/users/${user.id}`,
+                    fields,
+                    {
+                        headers: { Authorization: `Bearer ${accessToken}` },
+                    }
+                )
+
+                setSubmitting(false)
+                setMessage("Данные были успешно обновлены!")
+            }
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            catch (error: any) {
+                setSubmitting(false)
+
+                if (error.response) {
+                    if (error.response.status === 422) {
+                        setError("Недостаточно данных для выполнения запроса!")
+                        return
+                    }
+
+                    setError(error.response.data.detail)
+                    return
+                }
+
+                if (error.request) {
+                    setError("Не удалось соединиться с сервером!")
+                    return
+                }
+
+                setError("Ошибка при выполнении запроса!")
+                console.error(error)
+            }
         },
     })
 
     return (
         <Form action="" onSubmit={formik.handleSubmit} className="grid grid-cols-6 gap-4">
+            {error.length > 0 && (
+                <div className="col-span-6">
+                    <div className="rounded-md border border-red-700 bg-slate-900 py-3 px-5 text-red-400">{error}</div>
+                </div>
+            )}
+
+            {message.length > 0 && (
+                <div className="col-span-6">
+                    <div className="mt-3 rounded-md border border-green-700 bg-slate-900 py-3 px-5 text-green-400">{message}</div>
+                </div>
+            )}
+
             <div className="sm:col-span-2 col-span-6">
                 <label htmlFor="last-name" className="block font-bold">Фамилия&nbsp;<span className="text-red-600">*</span></label>
 
@@ -104,9 +159,10 @@ const ChangeUserForm = ({ user }: ChangeUserFormProps) => {
                     <input
                         id="email"
                         type="email"
-                        className="block bg-slate-900 rounded-sm border-zinc-200 border py-2 px-4 w-full focus:outline-blue-500 scheme-dark"
+                        className="block bg-slate-800 rounded-sm border-zinc-200 border py-2 px-4 w-full text-zinc-200/50 focus:outline-blue-500 scheme-dark"
                         placeholder="Ваш e-mail"
                         {...formik.getFieldProps("email")}
+                        disabled={true}
                     />
                 </div>
 

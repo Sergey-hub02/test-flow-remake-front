@@ -6,6 +6,13 @@ import { useFormik } from "formik"
 import * as Yup from "yup"
 import { mixed } from "yup"
 import { ChangeEvent, useState } from "react"
+import axios from "axios"
+
+interface ChangePhotoFormProps {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    user: any,
+    accessToken: string,
+}
 
 const changePhotoValidationSchema = Yup.object().shape({
     photo: mixed()
@@ -33,18 +40,60 @@ const changePhotoValidationSchema = Yup.object().shape({
         ),
 })
 
-const ChangePhotoForm = () => {
+const ChangePhotoForm = ({ user, accessToken }: ChangePhotoFormProps) => {
+    const [error, setError] = useState<string>("")
+    const [message, setMessage] = useState<string>("")
+
     const formik = useFormik({
         initialValues: {
             photo: "",
         },
         validationSchema: changePhotoValidationSchema,
-        onSubmit: fields => {
-            console.log("Отправка данных на сервер:", fields)
+        onSubmit: async (fields, { setSubmitting }) => {
+            setError("")
+
+            try {
+                const formData = new FormData()
+
+                formData.append(
+                    "photo",
+                    (fields.photo as unknown as File),
+                    (fields.photo as unknown as File).name
+                )
+
+                await axios.patch(`/api/v1/users/${user.id}/photo`, formData, {
+                    headers: { Authorization: `Bearer ${accessToken}` },
+                })
+
+                setSubmitting(false)
+                setMessage("Фотография успешно обновлена!")
+            }
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            catch (error: any) {
+                setSubmitting(false)
+
+                if (error.response) {
+                    if (error.response.status === 422) {
+                        setError("Недостаточно данных для выполнения запроса!")
+                        return
+                    }
+
+                    setError(error.response.data.detail)
+                    return
+                }
+
+                if (error.request) {
+                    setError("Не удалось соединиться с сервером!")
+                    return
+                }
+
+                setError("Ошибка при выполнении запроса!")
+                console.error(error)
+            }
         },
     })
 
-    const [image, setImage] = useState<string>("/user_stub.png")
+    const [image, setImage] = useState<string>(user.photo ? `/storage/photo/${user.photo}` : "/user_stub.png")
 
     const handlePhotoChange = (e: ChangeEvent<HTMLInputElement>) => {
         const photo = e.target.files?.[0]
@@ -60,6 +109,18 @@ const ChangePhotoForm = () => {
 
     return (
         <Form action="" onSubmit={formik.handleSubmit} formEncType="multipart/form-data" className="grid grid-cols-6 gap-4">
+            {error.length > 0 && (
+                <div className="col-span-6">
+                    <div className="rounded-md border border-red-700 bg-slate-900 py-3 px-5 text-red-400">{error}</div>
+                </div>
+            )}
+
+            {message.length > 0 && (
+                <div className="col-span-6">
+                    <div className="mt-3 rounded-md border border-green-700 bg-slate-900 py-3 px-5 text-green-400">{message}</div>
+                </div>
+            )}
+
             <div className="xl:col-span-1 sm:col-span-2 col-span-6 sm:row-span-2">
                 <div className="w-full max-w-32 h-32 mx-auto overflow-hidden">
                     <Image
@@ -69,6 +130,7 @@ const ChangePhotoForm = () => {
                         height={128}
                         className="rounded-full object-cover object-center w-full h-full"
                         loading="eager"
+                        unoptimized={true}
                         onLoad={() => {
                             if (!image || !image.startsWith("blob")) {
                                 return
